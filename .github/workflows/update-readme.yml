@@ -1,0 +1,128 @@
+name: 📖 Auto README Updater
+
+on:
+  schedule:
+    # Every Monday at 9:00 AM IST (03:30 UTC) — weekly README refresh
+    - cron: '30 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force update even if no changes'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme:
+    name: 📖 Update README
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config user.name "Activity Bot"
+          git config user.email "activity-bot@users.noreply.github.com"
+
+      - name: Count activity log files
+        id: stats
+        run: |
+          mkdir -p activity-log
+          COUNT=$(ls activity-log/*.md 2>/dev/null | wc -l)
+          LATEST=$(ls activity-log/*.md 2>/dev/null | sort | tail -1 | xargs basename 2>/dev/null || echo "N/A")
+          FIRST=$(ls activity-log/*.md 2>/dev/null | sort | head -1 | xargs basename 2>/dev/null || echo "N/A")
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "latest=$LATEST" >> $GITHUB_OUTPUT
+          echo "first=$FIRST" >> $GITHUB_OUTPUT
+          echo "📊 Total logs: $COUNT | Latest: $LATEST | First: $FIRST"
+
+      - name: Generate updated README
+        env:
+          LOG_COUNT: ${{ steps.stats.outputs.count }}
+          LATEST_LOG: ${{ steps.stats.outputs.latest }}
+          FIRST_LOG: ${{ steps.stats.outputs.first }}
+        run: |
+          DATE=$(date +"%Y-%m-%d")
+          TIME=$(date +"%H:%M UTC")
+          YEAR=$(date +"%Y")
+
+          # Generate a progress bar for the year
+          DAY_OF_YEAR=$(date +"%j")
+          TOTAL_DAYS=365
+          PROGRESS=$((DAY_OF_YEAR * 20 / TOTAL_DAYS))
+          BAR=""
+          for i in $(seq 1 20); do
+            if [ $i -le $PROGRESS ]; then
+              BAR="${BAR}█"
+            else
+              BAR="${BAR}░"
+            fi
+          done
+          PERCENT=$((DAY_OF_YEAR * 100 / TOTAL_DAYS))
+
+          cat > README.md << EOF
+          # 🤖 GitHub Activity Bot
+
+          > Keeping the contribution graph green, automatically. 🌿
+
+          ---
+
+          ## 📊 Stats
+
+          | Metric | Value |
+          |--------|-------|
+          | 📅 Last Updated | ${DATE} at ${TIME} |
+          | 📝 Total Activity Logs | ${LOG_COUNT} days logged |
+          | 🗓️ Tracking Since | ${FIRST_LOG} |
+          | 🔥 Latest Log | ${LATEST_LOG} |
+
+          ---
+
+          ## 🗓️ Year Progress — ${YEAR}
+
+          \`${BAR}\` **${PERCENT}%** of ${YEAR} complete (Day ${DAY_OF_YEAR} / ${TOTAL_DAYS})
+
+          ---
+
+          ## ⚙️ What This Bot Does
+
+          | Activity | Schedule | Description |
+          |----------|----------|-------------|
+          | 📝 Daily Commits | 3× per day | Pushes a dev log entry with a tip & quote |
+          | 📖 README Updates | Every Monday | Refreshes this file with latest stats |
+          | 🐛 Issue Rotation | Every Wednesday | Opens and closes tracked issues |
+          | ⭐ Star Activity | Every Friday | Stars repos in specified topics |
+
+          ---
+
+          ## 🗂️ Activity Log
+
+          \`activity-log/\` contains daily Markdown log files, one per day.
+          Each file includes a developer tip, a quote, and a streak status.
+
+          ---
+
+          ## 🚀 Setup
+
+          See [SETUP.md](./SETUP.md) for how to deploy this to your own repo.
+
+          ---
+
+          _Auto-updated every Monday · Powered by GitHub Actions_
+          EOF
+
+          echo "✅ README.md generated!"
+
+      - name: Commit README update
+        run: |
+          git add README.md
+          git diff --staged --quiet && echo "No README changes" && exit 0
+          git commit -m "📖 Auto-update README — $(date +"%Y-%m-%d")"
+          git push
+          echo "✅ README pushed!"

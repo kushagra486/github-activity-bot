@@ -1,0 +1,151 @@
+name: 🐛 Issue Rotation Bot
+
+on:
+  schedule:
+    # Every Wednesday at 11:00 AM IST (05:30 UTC)
+    - cron: '30 5 * * 3'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'What to do with issues'
+        required: false
+        default: 'rotate'
+        type: choice
+        options:
+          - rotate
+          - open-only
+          - close-old
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  issue-rotation:
+    name: 🐛 Rotate Issues
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Close old bot issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "🔍 Looking for old bot-created issues to close..."
+
+          # Get all open issues labeled 'bot-activity' older than 7 days
+          OLD_ISSUES=$(gh issue list \
+            --repo "$REPO" \
+            --label "bot-activity" \
+            --state open \
+            --json number,createdAt,title \
+            --jq '.[] | select(
+              (now - (.createdAt | fromdateiso8601)) > (7 * 86400)
+            ) | .number')
+
+          if [ -z "$OLD_ISSUES" ]; then
+            echo "ℹ️ No old bot issues to close."
+          else
+            for NUM in $OLD_ISSUES; do
+              echo "🔒 Closing issue #$NUM..."
+              gh issue close "$NUM" \
+                --repo "$REPO" \
+                --comment "✅ Resolved by bot rotation on $(date +"%Y-%m-%d"). Closing to keep tracker clean."
+              echo "✅ Closed #$NUM"
+            done
+          fi
+
+      - name: Create new weekly tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          WEEK=$(date +"%V")
+          YEAR=$(date +"%Y")
+          DATE=$(date +"%Y-%m-%d")
+          WEEKDAY=$(date +"%A")
+
+          # Pick a weekly dev challenge
+          CHALLENGES=(
+            "Learn one new Git command and document it"
+            "Refactor one function for readability"
+            "Write a unit test for an untested module"
+            "Review and update one documentation file"
+            "Explore one new npm/pip package relevant to your stack"
+            "Profile an existing script for performance"
+            "Implement one small CLI tool"
+            "Read one research paper or blog post on AI/ML"
+            "Build a mini RAG experiment with Groq"
+            "Create a reusable utility function"
+            "Try a new API and make a small demo"
+            "Document one piece of tribal knowledge"
+          )
+          CHALLENGE="${CHALLENGES[$RANDOM % ${#CHALLENGES[@]}]}"
+
+          # Pick a focus area
+          AREAS=("Backend" "Frontend" "AI/ML" "DevOps" "Open Source" "System Design" "Documentation")
+          AREA="${AREAS[$RANDOM % ${#AREAS[@]}]}"
+
+          gh issue create \
+            --repo "$REPO" \
+            --title "🗓️ Week ${WEEK}/${YEAR} — ${AREA} Focus Tracker" \
+            --label "bot-activity,weekly-tracker" \
+            --body "## 📋 Weekly Activity Tracker — Week ${WEEK} of ${YEAR}
+
+          **Started:** ${DATE} (${WEEKDAY})
+          **Focus Area:** ${AREA}
+
+          ---
+
+          ## 🎯 Weekly Challenge
+          > ${CHALLENGE}
+
+          ---
+
+          ## ✅ Activity Checklist
+
+          - [ ] Monday — Review goals for the week
+          - [ ] Tuesday — Deep work session (2h+ block)
+          - [ ] Wednesday — Mid-week check-in
+          - [ ] Thursday — Code review / collaboration
+          - [ ] Friday — Wrap up, document, push final commits
+
+          ---
+
+          ## 📝 Notes
+          _Add your notes and learnings here as the week progresses._
+
+          ---
+
+          ## 📊 Stats
+          - Commits this week: _TBD_
+          - PRs opened: _TBD_
+          - Issues resolved: _TBD_
+
+          ---
+
+          _Auto-created by GitHub Activity Bot · Closes next Wednesday_"
+
+          echo "✅ Created weekly tracker issue for Week ${WEEK}!"
+
+      - name: Create labels if missing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Ensure the labels exist (won't fail if already present)
+          gh label create "bot-activity" \
+            --repo "$REPO" \
+            --color "0075ca" \
+            --description "Created by the activity bot" \
+            2>/dev/null || echo "Label 'bot-activity' already exists"
+
+          gh label create "weekly-tracker" \
+            --repo "$REPO" \
+            --color "e4e669" \
+            --description "Weekly activity tracking issue" \
+            2>/dev/null || echo "Label 'weekly-tracker' already exists"
+
+          echo "✅ Labels ready!"
