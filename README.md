@@ -8,9 +8,16 @@
 
 | Metric | Value |
 |--------|-------|
-| 📅 Last Updated | Setting up... |
-| 📝 Total Activity Logs | 0 days logged |
-| 🔥 Latest Log | N/A |
+| 📅 Last Updated | 2026-06-24 at 01:39 UTC |
+| 📝 Total Activity Logs | 1 days logged |
+| 🗓️ Tracking Since | README.md |
+| 🔥 Latest Log | README.md |
+
+---
+
+## 🗓️ Year Progress — 2026
+
+`█████████░░░░░░░░░░░` **47%** of 2026 complete (Day 175 / 365)
 
 ---
 
@@ -18,23 +25,23 @@
 
 | Activity | Schedule | Description |
 |----------|----------|-------------|
-| 📝 Daily Commits | 3× per day (10AM, 2PM, 7PM IST) | Pushes a dev log entry with a tip & quote |
-| 📖 README Updates | Every Monday 9AM IST | Refreshes this file with latest stats |
-| 🐛 Issue Rotation | Every Wednesday 11AM IST | Opens weekly tracker, closes 7-day-old issues |
-| ⭐ Star Activity | Every Friday 6PM IST | Stars trending repos in your tech stack |
+| 📝 Daily Commits | 3× per day | Pushes a dev log entry with a tip & quote |
+| 📖 README Updates | Every Monday | Refreshes this file with latest stats |
+| 🐛 Issue Rotation | Every Wednesday | Opens and closes tracked issues |
+| ⭐ Star Activity | Every Friday | Stars repos in specified topics |
 
 ---
 
-## 🚀 Quick Setup
+## 🗂️ Activity Log
 
-See [SETUP.md](./SETUP.md) for the full guide.
+`activity-log/` contains daily Markdown log files, one per day.
+Each file includes a developer tip, a quote, and a streak status.
 
-**TL;DR:**
-1. Create a new GitHub repo
-2. Push all files in this folder to it
-3. Go to **Settings → Actions → General** → enable "Read and write permissions"
-4. Optionally add a `PAT_TOKEN` secret for cross-repo starring
-5. Trigger any workflow manually to test
+---
+
+## 🚀 Setup
+
+See [SETUP.md](./SETUP.md) for how to deploy this to your own repo.
 
 ---
 
